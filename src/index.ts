@@ -69,9 +69,9 @@ app.get('/post/:id/:type', (req: Request, res: Response): void => {
 // Bonne façon de faire pour la définition des types d'un web-service sous express.js en typescript
 // |
 // v
-type ReqDictionary = {}
+type ReqDictionary = {post_id: string}
 type ReqBody  = void;
-type ReqQuery = { last_id?: string }
+type ReqQuery = { last_id?: string };
 type ResBody  = IPost[];
 
 // On définit notre custom handler qui n'est ni plus ni moins qu'un type Request personnalisé
@@ -102,43 +102,63 @@ app.get('/posts', (req: CustomPostsHandlerRequest, res: Response): void => {
 });
 
 // 
-app.delete('/posts/:post_id', (req: Request, res: Response): void => {
+app.delete('/posts/:post_id', (req: CustomPostsHandlerRequest, res: Response): void => {
     try {
-        const postId: string = req.query.id as string;
-        deletePost(postId);
-        res.end();
+        const post_id: string = req.params.post_id;
+        if (post_id === undefined) {
+            res.status(400).send({ message: 'il manque un id ouuuuu' });
+            return;
+        } else {
+            const isDeleted = deletePost(post_id);
+            res.status(isDeleted ? 200 : 404).send({ message: isDeleted ? 'Post supprimé' : 'Post non trouvé' });
+        }
     }
     catch( e ){
         res.status(500).end();
     }
 });
 
-app.put('/posts', (req: Request, res: Response): void => {
+app.put('/posts', express.json(), (req: Request, res: Response): void => {
     try {
+        const newPost: IPost = req.body;
 
-        // TODO Creation
+        if (!newPost || !newPost.id || !newPost.author || !newPost.description) {
+            res.status(400).json({
+                message: 'Les informations sont incorrects',
+            });
+            return;
+        }
+
+        const existingPost = getPost(newPost.id);
+
+        if (existingPost) {
+            res.status(409).json({ message: `Le poste avec l'id  ${newPost.id} existe déjà.` });
+            return;
+        }
 
         res.status(201).json({
-            postId: `le post id créé`
+            message: 'Post créé avec succés.',
+            post: newPost,
         });
-    } catch (e){
-        res.status(500).end();
+    } catch (e) {
+        console.error('Erreur, pas cool:', e);
+        res.status(500).json({ message: 'tu as fait de la merde ...' });
     }
 });
 
-app.put('/posts/:post_id', (req: Request, res: Response): void => {
-    try {
-        const postId: string = req.query.id as string;
+// app.put('/posts/:post_id', (req: Request, res: Response): void => {
+//     try {
+//         const postId: string = req.query.id as string;
 
-        // todo update
+//         // todo update
 
-        res.status(200).json({
-            // Le nouveau contenu du post
-        });
-    } catch( e ){
-        res.status(500).end();
-    }
-});
+//         res.status(200).json({
+//             // Le nouveau contenu du post
+//         });
+//     } catch( e ){
+//         res.status(500).end();
+//     }
+// });
 
 // Start the server
 const PORT: number = 1337;

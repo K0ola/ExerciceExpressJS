@@ -17,7 +17,7 @@ export interface IPost {
     music: string;
 }
 
-function randomIntFromInterval(min: number, max: number): number { // min and max included 
+function randomIntFromInterval(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
@@ -72,8 +72,12 @@ export function getPosts(lastId?: string, postCount: number = 2): IPost[] {
     return postsResult.reduce( (acc: IPost[], { ...minPostInformations }) => [...acc, minPostInformations], []);
 }
 
-export function deletePost(post_id: string): void {
+export function deletePost(post_id: string): boolean {
+    const previousCount = posts.length;
     posts = posts.filter( ({ id }) => id !== post_id );
+    const currentCount = posts.length;
+    
+    return previousCount !== currentCount;
 }
 
 // export function updatePost(
